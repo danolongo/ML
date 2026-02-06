@@ -32,19 +32,19 @@ def lin_reg_closed_form(data: pd.DataFrame):
     x = data["Weight"].values
     t = data["Horsepower"].values
 
-    # Construct design matrix X with bias column (N x 2)
-    # Each row is [1, x_i] for intercept and slope
+    # design matrix X with bias column (N x 2)
+    # each row is [1, x_i] for intercept and slope
     N = len(x)
     X = np.column_stack([np.ones(N), x])
 
-    # Closed-form solution: w = (X^T X)^(-1) X^T t
+    # closed-form solution: w = (X^T X)^(-1) X^T t
     XtX = X.T @ X
     XtT = X.T @ t
     w = np.linalg.inv(XtX) @ XtT
 
     return w, X, t
 
-def lin_reg_gradient_descent(data: pd.DataFrame, learning_rate: float, max_iters: int = 1000):
+def lin_reg_gradient_descent(data: pd.DataFrame, learning_rate: float, max_iters: int = 10000):
     """
     Implements gradient descent solution of linear regression.
 
@@ -52,22 +52,33 @@ def lin_reg_gradient_descent(data: pd.DataFrame, learning_rate: float, max_iters
     output: tuple of (weights, X, t); weights is List[bias, slope]
     """
 
-    x = data["Weight"].values
-    t = data["Horsepower"].values
+    clean_data = data.dropna()
 
-    # Construct design matrix X with bias column (N x 2)
+    x = clean_data["Weight"].values
+    t = clean_data["Horsepower"].values
+
+    # normalize
+    x_max = np.max(x)
+    x_normalized = x / x_max
+
+    # design matrix X with bias column (N x 2)
     N = len(x)
-    X = np.column_stack([np.ones(N), x])
+    X = np.column_stack([np.ones(N), x_normalized])
 
-    # Initialize weights to zeros
     w = np.zeros(2)
 
-    # Gradient descent iterations
-    # Update rule: w = w - α * X^T (Xw - t)
+    # gradient descent iterations
+    # update rule: w = w - α * X^T (Xw - t)
     for _ in range(max_iters):
         error = X @ w - t
-        gradient = X.T @ error
+        gradient = X.T @ error / N
         w = w - learning_rate * gradient
+
+    # turn weights back to original scale
+    w = np.array([w[0], w[1] / x_max])
+
+    # build X with original x values for plotting
+    X = np.column_stack([np.ones(N), x])
 
     return w, X, t
 
@@ -87,10 +98,10 @@ def plot(results: tuple, title: str, filename: str):
     predictions = X @ w
 
     plt.figure()
-    plt.scatter(x_vals, t, label="Data", alpha=0.6)
-    plt.plot(x_vals, predictions, color="red", label="Regression Line")
-    plt.xlabel("Weight")
-    plt.ylabel("Horsepower")
+    plt.scatter(x_vals, t, marker="x", label="data", alpha=0.6)
+    plt.plot(x_vals, predictions, color="red", label="model")
+    plt.xlabel("weight")
+    plt.ylabel("horsepower")
     plt.title(title)
     plt.legend()
     plt.savefig(filename)
@@ -103,4 +114,4 @@ if __name__ == "__main__":
     data = preprocess("proj1Dataset.xlsx")
 
     plot(lin_reg_closed_form(data), "linear regression (closed form)", "closed_form.png")
-    plot(lin_reg_gradient_descent(data, learning_rate=1e-8), "linear regression (gradient descent)", "gradient_descent.png")
+    plot(lin_reg_gradient_descent(data, learning_rate=0.01), "linear regression (gradient descent)", "gradient_descent.png")
