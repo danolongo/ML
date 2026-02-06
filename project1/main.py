@@ -29,7 +29,6 @@ def lin_reg_closed_form(data: pd.DataFrame):
     output: tuple of (weights, X, t); weights is List[bias, slope]
     """
 
-    # Extract predictor (Weight) and target (Horsepower)
     x = data["Weight"].values
     t = data["Horsepower"].values
 
@@ -45,26 +44,57 @@ def lin_reg_closed_form(data: pd.DataFrame):
 
     return w, X, t
 
-def lin_reg_gradient_descent(data: pd.DataFrame, learning_rate: float):
+def lin_reg_gradient_descent(data: pd.DataFrame, learning_rate: float, max_iters: int = 1000):
     """
     Implements gradient descent solution of linear regression.
-    
-    input: data: pd.DataFrame
-    output: results (unsure in what format)
+
+    input: data: pd.DataFrame, learning_rate: float, max_iters: int
+    output: tuple of (weights, X, t); weights is List[bias, slope]
     """
 
-    # must choose “Weight” as the predictor and “Horsepower” as the target variables
+    x = data["Weight"].values
+    t = data["Horsepower"].values
 
-    pass
+    # Construct design matrix X with bias column (N x 2)
+    N = len(x)
+    X = np.column_stack([np.ones(N), x])
+
+    # Initialize weights to zeros
+    w = np.zeros(2)
+
+    # Gradient descent iterations
+    # Update rule: w = w - α * X^T (Xw - t)
+    for _ in range(max_iters):
+        error = X @ w - t
+        gradient = X.T @ error
+        w = w - learning_rate * gradient
+
+    return w, X, t
 
 
-def plot(info: pd.DataFrame): # unsure about params for this
+def plot(results: tuple, title: str, filename: str):
     """
-    Plot and save results in image
+    Plot data points and regression line, then save to file.
 
-
+    input: results: tuple of (weights, X, t), title: str, filename: str
     """
-    pass
+    w, X, t = results
+
+    # X[:, 1] is the Weight column (predictor)
+    x_vals = X[:, 1]
+
+    # Predictions using the regression line: y = w[0] + w[1] * x
+    predictions = X @ w
+
+    plt.figure()
+    plt.scatter(x_vals, t, label="Data", alpha=0.6)
+    plt.plot(x_vals, predictions, color="red", label="Regression Line")
+    plt.xlabel("Weight")
+    plt.ylabel("Horsepower")
+    plt.title(title)
+    plt.legend()
+    plt.savefig(filename)
+    plt.close()
 
 
 
@@ -72,5 +102,5 @@ def plot(info: pd.DataFrame): # unsure about params for this
 if __name__ == "__main__":
     data = preprocess("proj1Dataset.xlsx")
 
-    # plot(lin_reg_closed_form(data))
-    # plot(lin_reg_gradient_descent(data))
+    plot(lin_reg_closed_form(data), "linear regression (closed form)", "closed_form.png")
+    plot(lin_reg_gradient_descent(data, learning_rate=1e-8), "linear regression (gradient descent)", "gradient_descent.png")
