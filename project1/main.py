@@ -2,7 +2,7 @@
 # 1. Closed-form solution
 # 2. Gradient descent method
 
-# Your code must output two plots, one for closed form and one for gradient descent
+# code must output two plots, one for closed form and one for gradient descent
 
 import numpy as np
 import pandas as pd
@@ -11,46 +11,107 @@ import matplotlib.pyplot as plt
 def preprocess(filename: str) -> pd.DataFrame:
     """
     Open excel and format into a clean dataframe
-    
+
     input: filename: str
     output: pandas.DataFrame
     """
-    # must choose “Weight” as the predictor and “Horsepower” as the target variables
-    pass
+
+    data = pd.read_excel(filename)
+    data = data.dropna()
+
+    return data
 
 def lin_reg_closed_form(data: pd.DataFrame):
     """
-    
-    
+    Implements closed form solution of linear regression.
+
     input: data: pd.DataFrame
-    output: results (unsure in what format)
+    output: tuple of (weights, X, t); weights is List[bias, slope]
     """
-    pass
 
-def gradient_descent_sol(data: pd.DataFrame):
+    x = data["Weight"].values
+    t = data["Horsepower"].values
+
+    # design matrix X with bias column (N x 2)
+    # each row is [1, x_i] for intercept and slope
+    N = len(x)
+    X = np.column_stack([np.ones(N), x])
+
+    # closed-form solution: w = (X^T X)^(-1) X^T t
+    XtX = X.T @ X
+    XtT = X.T @ t
+    w = np.linalg.inv(XtX) @ XtT
+
+    return w, X, t
+
+def lin_reg_gradient_descent(data: pd.DataFrame, learning_rate: float, max_iters: int = 10000):
     """
-    
-    
-    input: data: pd.DataFrame
-    output: results (unsure in what format)
+    Implements gradient descent solution of linear regression.
+
+    input: data: pd.DataFrame, learning_rate: float, max_iters: int
+    output: tuple of (weights, X, t); weights is List[bias, slope]
     """
-    pass
+
+    clean_data = data.dropna()
+
+    x = clean_data["Weight"].values
+    t = clean_data["Horsepower"].values
+
+    # normalize
+    x_max = np.max(x)
+    x_normalized = x / x_max
+
+    # design matrix X with bias column (N x 2)
+    N = len(x)
+    X = np.column_stack([np.ones(N), x_normalized])
+
+    w = np.zeros(2)
+
+    # gradient descent iterations
+    # update rule: w = w - α * X^T (Xw - t)
+    for _ in range(max_iters):
+        error = X @ w - t
+        gradient = X.T @ error / N
+        w = w - learning_rate * gradient
+
+    # turn weights back to original scale
+    w = np.array([w[0], w[1] / x_max])
+
+    # build X with original x values for plotting
+    X = np.column_stack([np.ones(N), x])
+
+    return w, X, t
 
 
-def plot(info: pd.DataFrame): # unsure about params for this
+def plot(results: tuple, title: str, filename: str):
     """
-    Plot and save results in image
+    Plot data points and regression line, then save to file.
 
-
+    input: results: tuple of (weights, X, t), title: str, filename: str
     """
-    pass
+    w, X, t = results
+
+    # X[:, 1] is the Weight column (predictor)
+    x_vals = X[:, 1]
+
+    # Predictions using the regression line: y = w[0] + w[1] * x
+    predictions = X @ w
+
+    plt.figure()
+    plt.scatter(x_vals, t, marker="x", label="data", alpha=0.6)
+    plt.plot(x_vals, predictions, color="red", label="model")
+    plt.xlabel("weight")
+    plt.ylabel("horsepower")
+    plt.title(title)
+    plt.legend()
+    plt.savefig(filename)
+    plt.close()
 
 
 
 
 if __name__ == "__main__":
-    data = pd.read_excel("proj1Dataset.xlsx")
-    preprocess(data)
+    data = preprocess("proj1Dataset.xlsx")
 
-    # plot(lin_reg_closed_form(data))
-    # plot(gradient_descent_sol(data))
+    plot(lin_reg_closed_form(data), "linear regression (closed form)", "closed_form.png")
+    plot(lin_reg_gradient_descent(data, learning_rate=0.01), "linear regression (gradient descent)", "gradient_descent.png")
