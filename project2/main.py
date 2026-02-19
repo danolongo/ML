@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-np.random.seed(42)
+np.random.seed(175)
 
 
 def generate_data(n_samples, sigma=0.3):
@@ -12,6 +12,7 @@ def generate_data(n_samples, sigma=0.3):
     x = np.random.uniform(0, 1, n_samples)
     noise = np.random.normal(0, sigma, n_samples)
     t = np.sin(2 * np.pi * x) + noise
+
     return x, t
 
 
@@ -22,8 +23,10 @@ def build_design_matrix(x, degree):
     """
     n = len(x)
     phi = np.zeros((n, degree + 1))
+
     for j in range(degree + 1):
         phi[:, j] = x ** j
+
     return phi
 
 
@@ -35,6 +38,7 @@ def fit_polynomial(phi, t):
     phi_t_phi = phi.T @ phi
     phi_t_t = phi.T @ t
     w = np.linalg.solve(phi_t_phi, phi_t_t)
+
     return w
 
 
@@ -46,6 +50,7 @@ def compute_rms_error(phi, w, t):
     y = phi @ w
     n = len(t)
     mse = np.sum((y - t) ** 2) / n
+
     return np.sqrt(mse)
 
 
@@ -74,7 +79,7 @@ def run_experiment(n_train, n_test=100, max_degree=9, sigma=0.3):
         train_errors.append(train_err)
         test_errors.append(test_err)
         
-        print(f"M={m}: Train E_RMS={train_err:.4f}, Test E_RMS={test_err:.4f}")
+        # print(f"M={m}: Train E_RMS={train_err:.4f}, Test E_RMS={test_err:.4f}")
     
     return degrees, train_errors, test_errors
 
@@ -88,11 +93,11 @@ def plot_errors(degrees, train_errors, test_errors, n_train, filename):
     
     plt.xlabel('M', fontsize=12)
     plt.ylabel('$E_{RMS}$', fontsize=12)
-    plt.title(f'Polynomial Regression: $E_{{RMS}}$ vs Degree M (N_train={n_train})')
+    plt.title(f'N_train={n_train}')
     plt.legend()
     plt.grid(True, alpha=0.3)
     plt.xticks(degrees)
-    plt.ylim(bottom=0)
+    plt.ylim(0, 1)
     
     plt.tight_layout()
     plt.savefig(filename, dpi=150)
@@ -102,17 +107,11 @@ def plot_errors(degrees, train_errors, test_errors, n_train, filename):
 
 if __name__ == "__main__":
     # Experiment 1: N_train = 10
-    print("=" * 50)
-    print("Experiment 1: N_train = 10")
-    print("=" * 50)
     degrees, train_err_10, test_err_10 = run_experiment(n_train=10)
     plot_errors(degrees, train_err_10, test_err_10, n_train=10, 
-                filename="overfitting_n10.png")
+                filename="n_train10.png")
     
     # Experiment 2: N_train = 100
-    print("\n" + "=" * 50)
-    print("Experiment 2: N_train = 100")
-    print("=" * 50)
     degrees, train_err_100, test_err_100 = run_experiment(n_train=100)
     plot_errors(degrees, train_err_100, test_err_100, n_train=100,
-                filename="overfitting_n100.png")
+                filename="n_train100.png")
